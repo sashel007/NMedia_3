@@ -11,7 +11,6 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import ru.netology.nmedia.databinding.FragmentNewPostBinding
-import ru.netology.nmedia.util.StringArg
 import ru.netology.nmedia.viewmodel.PostViewModel
 
 class NewPostFragment : Fragment() {
@@ -31,9 +30,7 @@ class NewPostFragment : Fragment() {
         val postContent = args.postContent
 
 //        val text = arguments?.text
-        if (!postContent.isNullOrEmpty()) {
-            binding.edit.setText(postContent)
-        }
+        binding.edit.setText(postContent)
         binding.edit.requestFocus()
         binding.edit.postDelayed({
             showKeyBoard(binding.edit)
@@ -46,8 +43,8 @@ class NewPostFragment : Fragment() {
                 } else {
                     viewModel.addNewPost(content)
                 }
-                findNavController().navigateUp()
             }
+            findNavController().navigateUp()
         }
         viewModel.postCreated.observe(viewLifecycleOwner) {
             viewModel.loadPosts()

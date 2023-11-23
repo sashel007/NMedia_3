@@ -25,9 +25,9 @@ data class PostEntity(
             post.content,
             post.published,
             post.likedByMe,
-            post.likes,
-            post.sharings,
-            post.video
+            post.like
+//            post.sharings,
+//            post.video
         )
     }
 }

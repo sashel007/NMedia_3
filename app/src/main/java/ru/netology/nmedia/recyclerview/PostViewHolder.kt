@@ -14,29 +14,29 @@ class PostViewHolder(
 
 
     fun bind(post: Post) {
-        val videoCLickListener = View.OnClickListener {
-            onInteractionListener.playVideo(post.video)
-        }
+//        val videoCLickListener = View.OnClickListener {
+//            onInteractionListener.playVideo(post.video)
+//        }
         binding.apply {
             author.text = post.author
-            published.text = post.published
+//            published.text = post.published
             content.text = post.content
             likeIcon.isChecked = post.likedByMe
             likeIcon.text = formatAmount(post.likes)
             likeIcon.setOnClickListener {
                 onInteractionListener.like(post)
             }
-            sharingIcon.setOnClickListener {
-                onInteractionListener.share(post)
-            }
-            sharingIcon.text = formatAmount(post.sharings)
-            if (post.video.isNullOrEmpty()) {
-                videoGroupViews.visibility = View.GONE
-            } else {
-                videoGroupViews.visibility = View.VISIBLE
-                playButton.setOnClickListener(videoCLickListener)
-                videoImage.setOnClickListener(videoCLickListener)
-            }
+//            sharingIcon.setOnClickListener {
+//                onInteractionListener.share(post)
+//            }
+//            sharingIcon.text = formatAmount(post.sharings)
+//            if (post.video.isNullOrEmpty()) {
+//                videoGroupViews.visibility = View.GONE
+//            } else {
+//                videoGroupViews.visibility = View.VISIBLE
+//                playButton.setOnClickListener(videoCLickListener)
+//                videoImage.setOnClickListener(videoCLickListener)
+//            }
             menu.setOnClickListener {
                 PopupMenu(it.context, it).apply {
                     inflate(R.menu.menu_options)

@@ -1,6 +1,7 @@
 package ru.netology.nmedia.viewmodel
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,13 +16,13 @@ import kotlin.concurrent.thread
 
 private val empty = Post(
     id = 0L,
+    author = "Евгений",
     content = "",
-    author = "",
+    published = 0,
     likedByMe = false,
-    likes = 0,
-    published = "",
-    sharings = 0,
-    video = ""
+    likes = 0
+//    sharings = 0,
+//    video = ""
 )
 
 class PostViewModel(application: Application) : AndroidViewModel(application) {
@@ -46,6 +47,7 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
     fun setInteractionListener(listener: OnInteractionListener) {
         this.interactionListener = listener
     }
+
     fun getInteractionListener(): OnInteractionListener? {
         return interactionListener
     }
@@ -62,23 +64,55 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    fun getPostById(id: Long) = thread { repository.getById(id) }
+    fun like(id: Long) = thread {
+        // Получаем текущий пост
+        val currentPosts = _data.value?.posts.orEmpty()
+        val currentPost = currentPosts.find { it.id == id }
 
-    fun like(id: Long) = thread { repository.like(id) }
+        currentPost?.let { post ->
+            // Оптимистичное обновление UI
+            val updatedPost = if (post.likedByMe) {
+                post.copy(likes = post.likes - 1, likedByMe = false)
+            } else {
+                post.copy(likes = post.likes + 1, likedByMe = true)
+            }
+
+            // Обновляем список постов
+            val updatedPosts = currentPosts.map {
+                if (it.id == id) updatedPost else it
+            }
+            _data.postValue(_data.value?.copy(posts = updatedPosts))
+
+            // Асинхронное обновление на сервере
+            try {
+                if (post.likedByMe) {
+                    repository.unlikePost(id)
+                } else {
+                    repository.likePost(id)
+                }
+            } catch (e: IOException) {
+                // Если запрос не удался, откатываем изменения в UI
+                _data.postValue(_data.value?.copy(posts = currentPosts))
+            }
+        }
+    }
 
     fun share(id: Long) = thread { repository.share(id) }
 
     fun removeById(id: Long) = thread {
-        val old = _data.value?.posts.orEmpty()
-        _data.postValue(
-            _data.value?.copy(posts = _data.value?.posts.orEmpty()
-                .filter { it.id != id }
+        thread {
+            // Оптимистичная модель
+            val old = _data.value?.posts.orEmpty()
+            _data.postValue(
+                _data.value?.copy(posts = _data.value?.posts.orEmpty()
+                    .filter { it.id != id }
+                )
             )
-        )
-        try {
-            repository.removeById(id)
-        } catch (e: IOException) {
-            _data.postValue(_data.value?.copy(posts = old))
+            try {
+                repository.removeById(id)
+            } catch (e: IOException) {
+                _data.postValue(_data.value?.copy(posts = old))
+            }
         }
     }
 
@@ -88,8 +122,10 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
     fun addNewPost(content: String) {
         val newPost = empty.copy(content = content.trim(), id = 0L)
+        Log.d("SAVED_POST","$newPost")
         thread {
             val savedPost = repository.save(newPost)
+            Log.d("SAVED_POST","$savedPost")
 
             //Обновление списка постов
             val currentPosts = _data.value?.posts.orEmpty()
@@ -97,14 +133,14 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 
             // Оповещение об успешном создании
             _postCreated.postValue(Unit)
+            resetEditingState()
         }
-        resetEditingState()
     }
 
     fun updatePost(postId: Long, content: String) {
         thread {
             // Получаем текущий пост асинхронно
-            val currentPost = repository.getById(postId).value
+            val currentPost = repository.getById(postId)
             // Проверяем, не является ли текущий пост null
             currentPost?.let {
                 // Создаем обновленный пост
@@ -122,10 +158,17 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
             //Сбрасываем состояние редактирования
             resetEditingState()
         }
-
     }
-
 }
+
+
+//fun changeContent(content: String) {
+//    val text = content.trim()
+//    if (edited.value?.content == text) {
+//        return
+//    }
+//    edited.value = edited.value?.copy(content = text)
+//}
 
 //fun save() {
 //    thread {
@@ -154,3 +197,16 @@ class PostViewModel(application: Application) : AndroidViewModel(application) {
 //        edited.postValue(empty)
 //    }
 //}
+
+//fun save() {
+//    edited.value?.let {
+//        thread {
+//            repository.save(it)
+//            _postCreated.postValue(Unit)
+//        }
+//    }
+//    edited.value = empty
+//}
+
+
+
